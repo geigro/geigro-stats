@@ -1,0 +1,39 @@
+name: Update social stats
+
+on:
+  schedule:
+    - cron: '17 */2 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Playwright (needed for the LibertyCity scrape only)
+        run: |
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Fetch stats
+        run: node scripts/fetch-social-stats.js
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "geigro-stats-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add social-stats.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update social stats"
+            git push
+          fi
