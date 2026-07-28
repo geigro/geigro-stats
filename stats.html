@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GEIGRO Socials</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  ul.stats {
+    list-style: none;
+    margin: 0;
+    padding: 8px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  li.stat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .stat-icon {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f2f4;
+  }
+  .stat-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: #2b2f36;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .stat-body {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+    min-width: 0;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: #6b7280;
+  }
+  .stat-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #16181d;
+  }
+  .stat-value.is-loading {
+    color: #9ca3af;
+    font-weight: 400;
+  }
+  .updated {
+    margin: 6px 4px 0;
+    font-size: 10.5px;
+    color: #9ca3af;
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+  <ul class="stats">
+    <li class="stat" data-stat="discord">
+      <span class="stat-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.4" r="3"></circle><path d="M6.6 19.2c.62-3.1 2.62-5 5.4-5s4.78 1.9 5.4 5"></path><circle cx="5.9" cy="10.2" r="2.2"></circle><path d="M2.4 18c.38-2.1 1.7-3.35 3.55-3.35.78 0 1.47.2 2.05.58"></path><circle cx="18.1" cy="10.2" r="2.2"></circle><path d="M16 15.23c.58-.38 1.27-.58 2.05-.58 1.85 0 3.17 1.25 3.55 3.35"></path></svg></span>
+      <span class="stat-body">
+        <span class="stat-label">Discord Mitglieder</span>
+        <span class="stat-value is-loading">…</span>
+      </span>
+    </li>
+    <li class="stat" data-stat="youtube">
+      <span class="stat-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20.5c0-2.15-1.8-3.9-4-3.9s-4 1.75-4 3.9"></path><circle cx="12" cy="10" r="3.2"></circle><path d="M4.9 17.9c.36-1.34 1.42-2.28 2.78-2.55"></path><path d="M19.1 17.9c-.36-1.34-1.42-2.28-2.78-2.55"></path><circle cx="6.8" cy="11.3" r="2.15"></circle><circle cx="17.2" cy="11.3" r="2.15"></circle></svg></span>
+      <span class="stat-body">
+        <span class="stat-label">YouTube Abonnenten</span>
+        <span class="stat-value is-loading">…</span>
+      </span>
+    </li>
+    <li class="stat" data-stat="fivemods">
+      <span class="stat-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"></path><path d="m7.5 9.5 4.5 4.5 4.5-4.5"></path><path d="M5 19h14"></path></svg></span>
+      <span class="stat-body">
+        <span class="stat-label">5mods Downloads</span>
+        <span class="stat-value is-loading">…</span>
+      </span>
+    </li>
+    <li class="stat" data-stat="libertycity">
+      <span class="stat-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"></path><path d="m7.5 9.5 4.5 4.5 4.5-4.5"></path><path d="M5 19h14"></path></svg></span>
+      <span class="stat-body">
+        <span class="stat-label">LibertyCity Downloads</span>
+        <span class="stat-value is-loading">…</span>
+      </span>
+    </li>
+  </ul>
+  <div class="updated"></div>
+
+<script>
+(function () {
+  var REFRESH_MS = 5 * 60 * 1000;
+  var numberFormatter = new Intl.NumberFormat('de-DE');
+
+  function setStat(key, value, loading) {
+    var node = document.querySelector('.stat[data-stat="' + key + '"] .stat-value');
+    if (!node) return;
+    node.textContent = value;
+    node.classList.toggle('is-loading', Boolean(loading));
+  }
+
+  function setUpdatedLabel(date) {
+    var node = document.querySelector('.updated');
+    if (!node) return;
+    node.textContent = 'Aktualisiert ' + date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function loadDiscord() {
+    fetch('https://discord.com/api/v10/invites/JgrXUGb9e7?with_counts=true', { cache: 'no-store' })
+      .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+      .then(function (data) {
+        var count = data && data.approximate_member_count;
+        if (Number.isFinite(count)) setStat('discord', numberFormatter.format(count), false);
+      })
+      .catch(function () { setStat('discord', '–', false); });
+  }
+
+  function loadSocialStats() {
+    fetch('./social-stats.json', { cache: 'no-store' })
+      .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+      .then(function (data) {
+        if (data.youtube) setStat('youtube', numberFormatter.format(Number(data.youtube)), false);
+        if (data.fivemods) setStat('fivemods', numberFormatter.format(Number(data.fivemods)), false);
+        if (data.libertycity) setStat('libertycity', numberFormatter.format(Number(data.libertycity)), false);
+        if (data.updatedAt) setUpdatedLabel(new Date(data.updatedAt));
+      })
+      .catch(function () {
+        ['youtube', 'fivemods', 'libertycity'].forEach(function (key) { setStat(key, '–', false); });
+      });
+  }
+
+  function refresh() {
+    loadDiscord();
+    loadSocialStats();
+  }
+
+  refresh();
+  setInterval(refresh, REFRESH_MS);
+})();
+</script>
+</body>
+</html>
