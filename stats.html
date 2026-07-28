@@ -31,19 +31,9 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 6px 8px;
-    margin: -6px -8px;
-    border-radius: 10px;
     text-decoration: none;
     color: inherit;
-    border: 1px solid transparent;
     cursor: pointer;
-    transition: background 150ms ease, border-color 150ms ease;
-  }
-  a.stat:hover,
-  a.stat:focus-visible {
-    background: rgba(255, 74, 22, 0.12);
-    border-color: rgba(255, 74, 22, 0.38);
   }
   .stat-icon {
     flex: 0 0 auto;
@@ -69,7 +59,7 @@
   .stat-icon.icon-5mods { background: #20BA4E; }
   .stat-icon.icon-5mods img { width: 20px; height: auto; display: block; }
 
-  .stat-icon.icon-libertycity { background: #4896FA; }
+  .stat-icon.icon-libertycity { background: #0B57D0; }
   .stat-icon.icon-libertycity img { width: 22px; height: 22px; display: block; object-fit: contain; }
 
   .stat-body {
@@ -81,15 +71,25 @@
   .stat-label {
     font-size: 12px;
     color: #6b7280;
+    transition: color 200ms ease;
   }
   .stat-value {
     font-size: 15px;
     font-weight: 600;
     color: #16181d;
+    transition: color 200ms ease;
   }
   .stat-value.is-loading {
     color: #9ca3af;
     font-weight: 400;
+  }
+  a.stat:hover .stat-label,
+  a.stat:focus-visible .stat-label {
+    color: #ff8a5c;
+  }
+  a.stat:hover .stat-value,
+  a.stat:focus-visible .stat-value {
+    color: #FF4A16;
   }
 </style>
 </head>
