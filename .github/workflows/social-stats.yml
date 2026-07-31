@@ -27,17 +27,20 @@ jobs:
         run: node scripts/fetch-social-stats.js
 
       - name: Commit and push if changed
+        id: commit
         run: |
           git config user.name "geigro-stats-bot"
           git config user.email "actions@users.noreply.github.com"
           git add social-stats.json
           if git diff --staged --quiet; then
             echo "No changes to commit."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git commit -m "Update social stats"
           for i in 1 2 3 4 5; do
             if git push; then
+              echo "pushed=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             echo "Push rejected (attempt $i), rebasing onto latest main..."
@@ -46,3 +49,12 @@ jobs:
           done
           echo "Failed to push after retries" >&2
           exit 1
+
+      # jsDelivr's GitHub CDN caches social-stats.json for up to 7 days
+      # (see geigro/GEIGRO's src/lib/stats.ts). Without an explicit purge,
+      # the website would keep serving stale numbers for that long even
+      # though this workflow updates the source every 2h. Purging on every
+      # push keeps the CDN's cache duration irrelevant to actual freshness.
+      - name: Purge jsDelivr cache
+        if: steps.commit.outputs.pushed == 'true'
+        run: curl -fsSL "https://purge.jsdelivr.net/gh/geigro/geigro-stats@main/social-stats.json"
