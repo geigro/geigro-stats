@@ -18,27 +18,25 @@ async function fetchYoutubeSubscribers() {
   return match[1].replace(/[.,]/g, '');
 }
 
+function parseFiveModsProfileDownloads(html) {
+  // Read the profile-wide total from the stat label directly following the
+  // download icon. Download figures inside individual mod cards deliberately
+  // do not match this structure and must not be summed.
+  const match = html.match(
+    /<span\b[^>]*class=["'][^"']*\bstat-icon\b[^"']*\bfa-download\b[^"']*["'][^>]*>\s*<\/span>\s*<span\b[^>]*class=["'][^"']*\bstat-label\b[^"']*["'][^>]*>\s*([\d.,]+)\s*Downloads?\s*<\/span>/i
+  );
+  if (!match) throw new Error('Profile download total not found on 5mods profile');
+
+  const value = Number.parseInt(match[1].replace(/[.,]/g, ''), 10);
+  if (!Number.isFinite(value)) throw new Error('Invalid profile download total on 5mods profile');
+  return String(value);
+}
+
 async function fetchFiveModsDownloads() {
   const url = process.env.FIVEMODS_PROFILE_URL || 'https://de.gta5-mods.com/users/Geigro%20Developing';
   const res = await fetch(url, { headers: { 'User-Agent': userAgent } });
   if (!res.ok) throw new Error(`5mods HTTP ${res.status}`);
-  const html = await res.text();
-  // Match only the title="X Downloads" attribute — the page also repeats the same
-  // figure as plain visible text right next to it, which would double-count every
-  // mod if matched too. Values are still deduped since a mod can appear in more
-  // than one DOM section (e.g. duplicated markup for responsive layouts).
-  const seen = new Set();
-  const matches = [...html.matchAll(/title="([\d.,]+)\s*Downloads?"/gi)]
-    .map((m) => m[1].replace(/[.,]/g, ''))
-    .filter((value) => {
-      if (seen.has(value)) return false;
-      seen.add(value);
-      return true;
-    })
-    .map((value) => Number.parseInt(value, 10))
-    .filter((value) => Number.isFinite(value));
-  if (!matches.length) throw new Error('No download figures found on 5mods profile');
-  return String(matches.reduce((sum, value) => sum + value, 0));
+  return parseFiveModsProfileDownloads(await res.text());
 }
 
 async function fetchLibertyCityDownloads() {
@@ -49,11 +47,12 @@ async function fetchLibertyCityDownloads() {
     const page = await browser.newPage();
     await page.goto(profileUrl, { waitUntil: 'load', timeout: 30000 });
     await page.waitForTimeout(2000);
-    const bodyText = await page.evaluate(() => document.body.innerText);
-    const matches = [...bodyText.matchAll(/Downloads:\s*\n?\s*([\d,.]+)/g)]
+    const matches = await page.locator('.params .p_row').evaluateAll((rows) => rows
+      .map((row) => (row.textContent || '').trim().match(/^Downloads:\s*([\d,.]+)$/i))
+      .filter(Boolean)
       .map((match) => Number.parseInt(match[1].replace(/[,.]/g, ''), 10))
-      .filter((value) => Number.isFinite(value));
-    if (!matches.length) throw new Error('No "Downloads:" figures found on LibertyCity profile');
+      .filter((value) => Number.isFinite(value)));
+    if (!matches.length) throw new Error('No file download figures found on LibertyCity profile');
     return String(matches.reduce((sum, value) => sum + value, 0));
   } finally {
     await browser.close();
